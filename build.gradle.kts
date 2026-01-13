@@ -7,6 +7,8 @@ plugins {
 }
 
 group = "com.technicjelle"
+//No version, so the jar filename is clean
+//And we put the git hash into the manifest
 
 repositories {
 	mavenCentral()
@@ -27,6 +29,12 @@ tasks.jar {
 		attributes["git-hash"] = gitHash() + if (!gitClean()) "-dirty" else ""
 	}
 }
+
+tasks.shadowJar {
+	//Do not append `-all` after the jar name to keep the jar filename clean
+	archiveClassifier = ""
+}
+
 
 // The following three functions are copied from BlueMap's source code, under the MIT Licence
 // https://github.com/BlueMap-Minecraft/BlueMap/blob/6c59ab44e506028a99efe1a49eab4531425971ad/buildSrc/src/main/kotlin/versioning.kt
