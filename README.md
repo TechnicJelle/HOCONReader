@@ -2,6 +2,8 @@
 
 A tiny Java program to read values from [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) configuration files through JSON.
 
+You can download it from [GitHub Actions](https://github.com/TechnicJelle/HOCONReader/actions/workflows/gradle.yml).
+
 ## Example usages
 
 HOCON to JSON:
