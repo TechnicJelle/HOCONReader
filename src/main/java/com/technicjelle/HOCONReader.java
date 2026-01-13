@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class HOCONReader {
-	public static void main(String[] args) throws ConfigurateException {
+	public static void main(String[] args) {
 		if (args.length == 0) {
 			System.err.println("Provide a file to read. It will be converted to JSON and printed to stdout.");
 			System.err.println("Optionally provide a JSON path to extract stuff from the JSON output.");
@@ -32,22 +32,27 @@ public class HOCONReader {
 				.defaultNamingScheme(NamingSchemes.PASSTHROUGH)
 				.build();
 
-		final CommentedConfigurationNode hocon = HoconConfigurationLoader.builder()
-				.defaultOptions(opts -> opts.serializers(build -> build.registerAnnotatedObjects(customFactory)))
-				.path(hoconFileToRead)
-				.build()
-				.load();
+		try {
+			final CommentedConfigurationNode hocon = HoconConfigurationLoader.builder()
+					.defaultOptions(opts -> opts.serializers(build -> build.registerAnnotatedObjects(customFactory)))
+					.path(hoconFileToRead)
+					.build()
+					.load();
 
-		final String json = JacksonConfigurationLoader.builder()
-				.headerMode(HeaderMode.NONE)
-				.buildAndSaveString(hocon);
+			final String json = JacksonConfigurationLoader.builder()
+					.headerMode(HeaderMode.NONE)
+					.buildAndSaveString(hocon);
 
-		if (args.length == 2) {
-			final String jsonPath = args[1];
-			final String filtered = JsonPath.read(json, jsonPath);
-			System.out.println(filtered);
-		} else {
-			System.out.println(json);
+			if (args.length == 2) {
+				final String jsonPath = args[1];
+				final String filtered = JsonPath.read(json, jsonPath);
+				System.out.println(filtered);
+			} else {
+				System.out.println(json);
+			}
+		} catch (ConfigurateException e) {
+			System.err.println("Error trying to read file \"" + hoconFileToRead + "\":");
+			throw new RuntimeException(e);
 		}
 	}
 }
