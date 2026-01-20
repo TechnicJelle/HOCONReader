@@ -34,9 +34,65 @@ $ java -jar HOCONReader.jar /home/technicjelle/Documents/BlueMapGUI/1_13_2/confi
 }
 ```
 
-Extract values from the resulting JSON with [JSONPath](https://github.com/json-path/JsonPath):
+You can also read multiple files at once.
+The order is guaranteed to be the same as the input.
+The different files are separated with `\0` (null terminators).
 
 ```bash
-$ java -jar HOCONReader.jar /home/technicjelle/Documents/BlueMapGUI/1_13_2/config/maps/overworld.conf $.world
-/home/technicjelle/.minecraft/saves/1_13_2/
+$ java -jar HOCONReader.jar /home/technicjelle/Documents/BlueMapGUI/1_13_2/config/maps/overworld.conf /home/technicjelle/Documents/BlueMapGUI/1_13_2/config/maps/nether.conf /home/technicjelle/Documents/BlueMapGUI/1_13_2/config/maps/end.conf
+{
+  "world": "/home/technicjelle/.minecraft/saves/1_13_2/",
+  "dimension": "minecraft:overworld",
+  "name": "Overworld",
+  "sorting": 0,
+  "sky-color": "#7dabff",
+  "void-color": "#000000",
+  "ambient-light": 0.1,
+  "remove-caves-below-y": 55,
+  "cave-detection-ocean-floor": -5,
+  "cave-detection-uses-block-light": false,
+  "min-inhabited-time": 0,
+  "render-edges": true,
+  "save-hires-layer": true,
+  "storage": "file",
+  "ignore-missing-light-data": false,
+  "marker-sets": { }
+}
+{
+  "world": "/home/technicjelle/.minecraft/saves/1_13_2/",
+  "dimension": "minecraft:the_nether",
+  "name": "Nether",
+  "sorting": 100,
+  "sky-color": "#290000",
+  "void-color": "#150000",
+  "ambient-light": 0.6,
+  "remove-caves-below-y": -10000,
+  "cave-detection-ocean-floor": -5,
+  "cave-detection-uses-block-light": false,
+  "max-y": 90,
+  "min-inhabited-time": 0,
+  "render-edges": true,
+  "save-hires-layer": true,
+  "storage": "file",
+  "ignore-missing-light-data": false,
+  "marker-sets": { }
+}
+{
+  "world": "/home/technicjelle/.minecraft/saves/1_13_2/",
+  "dimension": "minecraft:the_end",
+  "name": "End",
+  "sorting": 200,
+  "sky-color": "#080010",
+  "void-color": "#080010",
+  "ambient-light": 0.6,
+  "remove-caves-below-y": -10000,
+  "cave-detection-ocean-floor": -5,
+  "cave-detection-uses-block-light": false,
+  "min-inhabited-time": 0,
+  "render-edges": true,
+  "save-hires-layer": true,
+  "storage": "file",
+  "ignore-missing-light-data": false,
+  "marker-sets": { }
+}
 ```

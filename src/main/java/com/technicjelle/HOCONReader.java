@@ -1,6 +1,5 @@
 package com.technicjelle;
 
-import com.jayway.jsonpath.JsonPath;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
@@ -15,15 +14,8 @@ import java.nio.file.Path;
 public class HOCONReader {
 	public static void main(String[] args) {
 		if (args.length == 0) {
-			System.err.println("Provide a file to read. It will be converted to JSON and printed to stdout.");
-			System.err.println("Optionally provide a JSON path to extract stuff from the JSON output.");
-			System.exit(1);
-			return;
-		}
-
-		final Path hoconFileToRead = Path.of(args[0]);
-		if (!Files.exists(hoconFileToRead)) {
-			System.err.println("File \"" + hoconFileToRead + "\" does not exist");
+			System.err.println("Provide file(s) to read. It/they will be converted to JSON and printed to stdout.");
+			System.err.println("If multiple files are provided, they will be printed right after each other, separated by a \\0 (null terminator).");
 			System.exit(1);
 			return;
 		}
@@ -32,27 +24,39 @@ public class HOCONReader {
 				.defaultNamingScheme(NamingSchemes.PASSTHROUGH)
 				.build();
 
-		try {
-			final CommentedConfigurationNode hocon = HoconConfigurationLoader.builder()
-					.defaultOptions(opts -> opts.serializers(build -> build.registerAnnotatedObjects(customFactory)))
-					.path(hoconFileToRead)
-					.build()
-					.load();
+		final HoconConfigurationLoader.Builder hoconBuilder = HoconConfigurationLoader.builder()
+				.defaultOptions(opts -> opts.serializers(build -> build.registerAnnotatedObjects(customFactory)));
 
-			final String json = JacksonConfigurationLoader.builder()
-					.headerMode(HeaderMode.NONE)
-					.buildAndSaveString(hocon);
+		final JacksonConfigurationLoader.Builder jacksonBuilder = JacksonConfigurationLoader.builder()
+				.headerMode(HeaderMode.NONE);
 
-			if (args.length == 2) {
-				final String jsonPath = args[1];
-				final String filtered = JsonPath.read(json, jsonPath);
-				System.out.println(filtered);
-			} else {
-				System.out.println(json);
+		final int argsLength = args.length;
+		final String[] strings = new String[argsLength];
+		for (int i = 0; i < argsLength; i++) {
+			String arg = args[i];
+			final Path hoconFileToRead = Path.of(arg);
+			if (!Files.exists(hoconFileToRead)) {
+				System.err.println("File \"" + hoconFileToRead + "\" does not exist");
+				System.exit(1);
+				return;
 			}
-		} catch (ConfigurateException e) {
-			System.err.println("Error trying to read file \"" + hoconFileToRead + "\":");
-			throw new RuntimeException(e);
+
+			try {
+				final CommentedConfigurationNode hocon = hoconBuilder
+						.path(hoconFileToRead)
+						.build()
+						.load();
+
+				final String json = jacksonBuilder
+						.buildAndSaveString(hocon);
+
+				strings[i] = json;
+			} catch (ConfigurateException e) {
+				System.err.println("Error trying to read file \"" + hoconFileToRead + "\":");
+				throw new RuntimeException(e);
+			}
 		}
+
+		System.out.print(String.join("\0", strings));
 	}
 }
