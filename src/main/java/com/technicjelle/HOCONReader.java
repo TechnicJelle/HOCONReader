@@ -12,7 +12,8 @@ import org.spongepowered.configurate.util.NamingSchemes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class HOCONReader {
 	public static void main(String[] args) {
@@ -71,10 +72,28 @@ public class HOCONReader {
 	}
 
 	private static int getHeaderLength(Path file) {
-		// TODO: Use File.lines() stream API instead
-		final List<String> lines;
-		try {
-			lines = Files.readAllLines(file);
+		try (final Stream<String> lines = Files.lines(file)) {
+			final Iterator<String> iterator = lines.iterator();
+
+			int headerLength = 0;
+			while (iterator.hasNext()) {
+				String line = iterator.next();
+				if (line.startsWith("#") || line.startsWith("//")) {
+					// Count commented lines from the start
+					headerLength++;
+				} else if (line.isBlank()) {
+					// If we encounter a blank line, that is the end of the header
+					headerLength++; // (Also count this blank line)
+					break;
+				} else {
+					// If we encounter a line that is not commented, but also not blank, that means we encountered an actual key,
+					// which means that what we have been counting here was actually NOT a header, but a key-comment.
+					// This file does not actually have a header after all, so we reset to 0 and break.
+					headerLength = 0;
+					break;
+				}
+			}
+			return headerLength;
 		} catch (IOException e) {
 			// If something went wrong, we just return 0.
 			// We'll just use the ParsingException's own line number.
@@ -82,24 +101,5 @@ public class HOCONReader {
 			// Better than crashing the program while trying to log an error, at least... :^)
 			return 0;
 		}
-
-		int headerLength = 0;
-		for (String line : lines) {
-			if (line.startsWith("#") || line.startsWith("//")) {
-				// Count commented lines from the start
-				headerLength++;
-			} else if (line.isBlank()) {
-				// If we encounter a blank line, that is the end of the header
-				headerLength++; // (Also count this blank line)
-				break;
-			} else {
-				// If we encounter a line that is not commented, but also not blank, that means we encountered an actual key,
-				// which means that what we have been counting here was actually NOT a header, but a key-comment.
-				// This file does not actually have a header after all, so we reset to 0 and break.
-				headerLength = 0;
-				break;
-			}
-		}
-		return headerLength;
 	}
 }
