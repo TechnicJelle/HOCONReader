@@ -5,16 +5,19 @@ import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.jackson.JacksonConfigurationLoader;
 import org.spongepowered.configurate.loader.HeaderMode;
+import org.spongepowered.configurate.loader.ParsingException;
 import org.spongepowered.configurate.objectmapping.ObjectMapper;
 import org.spongepowered.configurate.util.NamingSchemes;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public class HOCONReader {
 	public static void main(String[] args) {
 		if (args.length == 0) {
-			System.err.println("Provide file(s) to read. It/they will be converted to JSON and printed to stdout.");
+			System.err.println("Provide HOCON file(s) to read. It/they will be converted to JSON and printed to stdout.");
 			System.err.println("If multiple files are provided, they will be printed right after each other, separated by a \\0 (null terminator).");
 			System.exit(1);
 			return;
@@ -51,12 +54,52 @@ public class HOCONReader {
 						.buildAndSaveString(hocon);
 
 				strings[i] = json;
+			} catch (ParsingException e) {
+				int line = e.line() + getHeaderLength(hoconFileToRead);
+				String errorMessage = e.getCause().getMessage();
+				errorMessage = errorMessage.replaceFirst("Reader: \\d+: ", "");
+				strings[i] = "Error trying to parse file \"" + hoconFileToRead + "\":\n" +
+							 "Line: " + line + "\n" +
+							 errorMessage + "\n";
 			} catch (ConfigurateException e) {
-				System.err.println("Error trying to read file \"" + hoconFileToRead + "\":");
-				throw new RuntimeException(e);
+				strings[i] = "Error trying to read file \"" + hoconFileToRead + "\":\n"
+							 + e.rawMessage() + "\n";
 			}
 		}
 
 		System.out.print(String.join("\0", strings));
+	}
+
+	private static int getHeaderLength(Path file) {
+		// TODO: Use File.lines() stream API instead
+		final List<String> lines;
+		try {
+			lines = Files.readAllLines(file);
+		} catch (IOException e) {
+			// If something went wrong, we just return 0.
+			// We'll just use the ParsingException's own line number.
+			// It is likely that that one is incorrect, but it's not THAT bad if the line number is a bit off.
+			// Better than crashing the program while trying to log an error, at least... :^)
+			return 0;
+		}
+
+		int headerLength = 0;
+		for (String line : lines) {
+			if (line.startsWith("#") || line.startsWith("//")) {
+				// Count commented lines from the start
+				headerLength++;
+			} else if (line.isBlank()) {
+				// If we encounter a blank line, that is the end of the header
+				headerLength++; // (Also count this blank line)
+				break;
+			} else {
+				// If we encounter a line that is not commented, but also not blank, that means we encountered an actual key,
+				// which means that what we have been counting here was actually NOT a header, but a key-comment.
+				// This file does not actually have a header after all, so we reset to 0 and break.
+				headerLength = 0;
+				break;
+			}
+		}
+		return headerLength;
 	}
 }
